@@ -273,11 +273,11 @@ def update_html(restaurants):
     new_data = "const ALL = " + json.dumps(restaurants, ensure_ascii=False) + ";"
     html = re.sub(r"const ALL = \[.*?\];", lambda _: new_data, html, flags=re.DOTALL)
 
-    # 타임스탬프 교체 (동적 new Date() → 스크래핑 시각으로 고정)
+    # 타임스탬프 교체
     now = datetime.now()
     timestamp = f"{now.year}년 {now.month}월 {now.day}일 {now.hour}시 {now.minute:02d}분"
     html = re.sub(
-        r"const now = new Date\(\);\s*document\.getElementById\('updated'\)\.textContent\s*=\s*`[^`]+`;",
+        r"document\.getElementById\('updated'\)\.textContent\s*=\s*['\`][^'\`]*['\`];",
         f"document.getElementById('updated').textContent = '데이터 기준: {timestamp}';",
         html,
     )
