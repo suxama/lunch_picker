@@ -215,6 +215,44 @@ def interactive_mode(restaurants):
             print("⚠️  올바른 번호를 입력해 주세요.\n")
 
 
+def apply_scoring(restaurants):
+    """종합 스코어 계산 후 상위 100개 반환.
+
+    가중치: 평점 40% + 다이닝코드 점수 30% + 리뷰수 25% + 거리(역방향) 5%
+    """
+    pool = [r for r in restaurants if r.get("user_score") and r.get("score")]
+    if not pool:
+        return restaurants
+
+    def vals(key):
+        return [r[key] for r in pool]
+
+    def norm(v, mn, mx):
+        return (v - mn) / (mx - mn) if mx != mn else 0
+
+    us = vals("user_score"); sc = vals("score")
+    rv = vals("review_cnt"); di = [r["distance"] or 0 for r in pool]
+    us_min, us_max = min(us), max(us)
+    sc_min, sc_max = min(sc), max(sc)
+    rv_min, rv_max = min(rv), max(rv)
+    di_min, di_max = min(di), max(di)
+
+    for r in pool:
+        dist = r["distance"] or 0
+        r["composite"] = round(
+            norm(r["user_score"], us_min, us_max) * 0.40 +
+            norm(r["score"],      sc_min, sc_max) * 0.30 +
+            norm(r["review_cnt"], rv_min, rv_max) * 0.25 +
+            (1 - norm(dist,       di_min, di_max)) * 0.05,
+            3
+        )
+
+    ranked = sorted(pool, key=lambda x: x["composite"], reverse=True)
+    top100 = ranked[:100]
+    print(f"✅  스코어링 완료: {len(restaurants)}개 → 상위 {len(top100)}개 선정")
+    return top100
+
+
 def update_html(restaurants):
     """lunch_picker.html의 데이터와 타임스탬프를 최신으로 갱신."""
     import os
@@ -286,6 +324,7 @@ def main():
         except Exception as e:
             print(f"\n⚠️  데이터를 불러오지 못했습니다: {e}")
             sys.exit(1)
+        restaurants = apply_scoring(restaurants)
         update_html(restaurants)
         return
 
