@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>종각역 점심 추천기</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222f;
+    --accent: #ff6b35;
+    --accent2: #ff9500;
+    --green: #34c759;
+    --red: #ff3b30;
+    --text: #f0f0f5;
+    --subtext: #8e8ea0;
+    --border: #2e2e3e;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Pretendard", "Noto Sans KR", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  header { text-align: center; margin-bottom: 36px; }
+  header .emoji { font-size: 52px; line-height: 1; margin-bottom: 12px; }
+  header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  header p  { color: var(--subtext); font-size: 13px; margin-top: 6px; }
+  .badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--subtext);
+    margin-top: 10px;
+  }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 28px; }
+  .filter-btn {
+    padding: 8px 18px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--subtext);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  .card-wrap {
+    width: 100%;
+    max-width: 520px;
+    min-height: 280px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 28px 28px;
+  }
+  .card.flip { animation: flipIn .5s cubic-bezier(.34,1.3,.64,1) both; }
+  @keyframes flipIn {
+    0%   { transform: rotateY(90deg) scale(.9); opacity: 0; }
+    100% { transform: rotateY(0deg)  scale(1);  opacity: 1; }
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .restaurant-name { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.3; max-width: 78%; }
+  .open-badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0; margin-top: 4px;
+  }
+  .open-badge.open   { background: rgba(52,199,89,.15); color: var(--green); border: 1px solid rgba(52,199,89,.3); }
+  .open-badge.closed { background: rgba(255,59,48,.12);  color: var(--red);   border: 1px solid rgba(255,59,48,.25); }
+
+  .category-tag {
+    display: inline-block;
+    background: rgba(255,107,53,.15);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+  .info-item { display: flex; flex-direction: column; gap: 3px; }
+  .info-label { font-size: 11px; color: var(--subtext); text-transform: uppercase; letter-spacing: .5px; }
+  .info-value { font-size: 15px; font-weight: 600; }
+  .stars { color: var(--accent2); }
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+  .address { font-size: 13px; color: var(--subtext); line-height: 1.5; margin-bottom: 14px; }
+  .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .keyword {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: var(--subtext);
+  }
+  .diningcode-link {
+    display: block; text-align: center;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px;
+    font-size: 13px; color: var(--subtext); text-decoration: none;
+    transition: all .2s;
+  }
+  .diningcode-link:hover { border-color: var(--accent); color: var(--accent); }
+
+  .card.empty {
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; color: var(--subtext);
+    min-height: 200px; font-size: 15px;
+  }
+  .card.empty .big { font-size: 40px; }
+
+  .pick-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; border: none; border-radius: 50px;
+    padding: 16px 52px; font-size: 18px; font-weight: 700;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 4px 24px rgba(255,107,53,.4);
+    letter-spacing: -0.3px; margin-bottom: 40px;
+  }
+  .pick-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,107,53,.5); }
+  .pick-btn:active { transform: scale(.96); }
+  .pick-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+  .roulette-card {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 280px;
+  }
+  .roulette-wrap { text-align: center; width: 100%; padding: 20px; }
+  .roulette-label {
+    font-size: 13px; color: var(--subtext); margin-bottom: 28px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .roulette-name {
+    font-size: 28px; font-weight: 800; letter-spacing: -0.5px;
+    min-height: 44px; line-height: 1.3;
+    transition: color .3s;
+  }
+  .roulette-cat {
+    font-size: 13px; color: var(--subtext); margin-top: 10px; min-height: 20px;
+  }
+  @keyframes rouletteFlash {
+    0%   { opacity: .2; transform: translateY(6px) scale(.95); }
+    60%  { opacity: 1;  transform: translateY(-2px) scale(1.04); }
+    100% { opacity: 1;  transform: translateY(0)    scale(1); }
+  }
+  .roulette-flash { animation: rouletteFlash .12s ease-out; }
+  @keyframes rouletteLand {
+    0%   { color: var(--text);   transform: scale(1); }
+    40%  { color: var(--accent); transform: scale(1.12); }
+    70%  { color: var(--accent); transform: scale(.97); }
+    100% { color: var(--accent); transform: scale(1); }
+  }
+  .roulette-land { animation: rouletteLand .5s cubic-bezier(.34,1.3,.64,1) forwards; }
+
+  .list-section { width: 100%; max-width: 520px; }
+  .list-title {
+    font-size: 13px; font-weight: 600; color: var(--subtext);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 14px;
+  }
+  .list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color .2s;
+  }
+  .list-item:hover { border-color: var(--accent); }
+  .list-rank { font-size: 12px; font-weight: 700; color: var(--subtext); width: 22px; text-align: center; flex-shrink: 0; }
+  .list-rank.top3 { color: var(--accent2); }
+  .list-info { flex: 1; min-width: 0; }
+  .list-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-cat  { font-size: 11px; color: var(--subtext); margin-top: 2px; }
+  .list-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .list-score { font-size: 13px; font-weight: 700; color: var(--accent2); }
+  .list-dist  { font-size: 11px; color: var(--subtext); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot.open   { background: var(--green); }
+  .dot.closed { background: var(--border); }
+
+  .updated { color: var(--subtext); font-size: 11px; text-align: center; margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="emoji">🍱</div>
+  <h1>종각역 점심 추천기</h1>
+  <p>다이닝코드 실시간 데이터</p>
+  <div class="badge">반경 500m · 총 100개 · 영업 중 61개</div>
+</header>
+
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all"  onclick="setFilter('all')">전체</button>
+  <button class="filter-btn"        data-filter="open" onclick="setFilter('open')">🟢 영업 중만</button>
+</div>
+
+<div class="card-wrap">
+  <div class="card empty" id="card">
+    <div class="big">🎲</div>
+    <span>버튼을 눌러 오늘의 점심을 뽑아보세요!</span>
+  </div>
+</div>
+
+<button class="pick-btn" onclick="pick()">🎲 오늘의 점심 뽑기!</button>
+
+<div class="list-section">
+  <div class="list-title">⭐ 평점 TOP 10</div>
+  <div id="topList"></div>
+</div>
+
+<div class="updated" id="updated"></div>
+
+<script>
+const ALL = [{"name": "코코이찌방야 종로타워점", "category": "카레, 일본식카레", "address": "서울특별시 종로구 종로 51 지하2층", "phone": "02-737-5510", "user_score": 4.3, "score": 70, "review_cnt": 10, "open_status": "영업 중", "distance": 52, "url": "https://www.diningcode.com/profile.php?rid=4oc29BbH6cti", "keywords": ["혼밥", "무료주차", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260129123412_photo1_a46701895070.webp", "area": "종각역", "latest_review": {"user": "직딩의먹코", "text": "직장인들이 많이 찾는 카레집이에요\n토핑다양하고 양도 많아서 좋습니다.", "date": "1개월 전"}}, {"name": "포브라더스", "category": "베트남음식, 월남쌈", "address": "서울특별시 종로구 종로 51 종로타워 지하2층 210호", "phone": "0507-1415-4147", "user_score": 4.3, "score": 78, "review_cnt": 22, "open_status": "영업 중", "distance": 61, "url": "https://www.diningcode.com/profile.php?rid=ZjZGwxG8Jgkg", "keywords": ["식사모임", "무료주차", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251120030744291_photo_5e0bf9bca473.webp", "area": "종각역", "latest_review": {"user": "미니iii스타", "text": "종각역 종로타워 지하 팟타이 포 다 맛있었다 평일 점심에 사람 많음ㅋㅋ\n점심시간대에는 웨이팅도 있으나 테이블링을 사용해서 크게 번거롭진 않습니다.", "date": "4개월 전"}}, {"name": "미도인 종로", "category": "덮밥, 스테이크덮밥", "address": "서울특별시 종로구 종로 51 지하2층", "phone": "02-720-5097", "user_score": 4, "score": 76, "review_cnt": 29, "open_status": "영업 중", "distance": 61, "url": "https://www.diningcode.com/profile.php?rid=pjzKUni8FX5s", "keywords": ["식사모임", "무료주차", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260225125247048_photo_26e18beb2a3d.webp", "area": "종각역", "latest_review": {"user": "Sebas Kim", "text": "직장인 단체가 많아서 점심 시간에 소규모로 가면 웨이팅이 길 수 있음.\n직장인들 점심에 먹기 좋아요", "date": "3개월 전"}}, {"name": "보돌미역", "category": "미역국, 가자미미역국", "address": "서울특별시 종로구 종로 51", "phone": "0507-1308-1391", "user_score": 4.1, "score": 74, "review_cnt": 14, "open_status": "영업 중", "distance": 61, "url": "https://www.diningcode.com/profile.php?rid=RwZmPVT5I3M8", "keywords": ["가족외식", "무료주차", "배달", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250918042144_photo1_AnMVavwD8JFa.webp", "area": "종각역", "latest_review": {"user": "노말러", "text": "점심에 자주 방문하는데 양이 푸짐하니 많아요.\n점심에는 대기해야 한다고 소문 난 식당인데 저녁이라서 대기없이 바로 입장 전복가자미 미역국을 먹었는데 뽀얀국물에 전복까지 건강을 먹은 기분 이네요\n점심 피크시간대라 그런지 조금 서비스가 느렸어요\n광화문종각종로 인근 직장인 점심먹기 좋은 미역국맛집 보돌미역!", "date": "9개월 전"}}, {"name": "101번지남산돈까스 종로타워점", "category": "돈까스, 경양식", "address": "서울특별시 종로구 종로 51 지하1층 B104호", "phone": "070-7537-3651", "user_score": 4.4, "score": 67, "review_cnt": 5, "open_status": "영업 중", "distance": 61, "url": "https://www.diningcode.com/profile.php?rid=JnKUS01A6jOr", "keywords": ["혼밥", "배달", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260118104518345_photo_a956f764d1e2.webp", "area": "종각역", "latest_review": {"user": "태태1230", "text": "점심시간에 방문하기 좋은 돈까스집입니다\n빠르게 나와서 점심시간에 가기 조음.", "date": "2개월 전"}}, {"name": "히말라야 종각점", "category": "인도음식, 커리", "address": "서울특별시 종로구 종로8길 5 2층", "phone": "0507-1366-4786", "user_score": 4.6, "score": 75, "review_cnt": 9, "open_status": "영업 중", "distance": 113, "url": "https://www.diningcode.com/profile.php?rid=LMAG6ayh2CJX", "keywords": ["식사모임", "이국적/이색적", "예약가능", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250427125642_photo1_aec27fd59f7e.jpg", "area": "종각", "latest_review": {"user": "SSeuKKaa", "text": "세트메뉴 구성이 좋고 점심이나 저녁 모임하기도 좋아보였습니다\n점심약속으로 찾은 인도커리 맛집 가성비 좋은 런치세트로 알차게 먹고 갑니다.", "date": "1년 전"}}, {"name": "옥된장 종각점", "category": "전골, 된장", "address": "서울특별시 종로구 종로 62-1 1층", "phone": "02-730-2377", "user_score": 3.2, "score": 69, "review_cnt": 5, "open_status": "영업 중", "distance": 120, "url": "https://www.diningcode.com/profile.php?rid=J4ty7I80iqP4", "keywords": ["혼밥", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260325054120045_photo_ac08c2249926.webp", "area": "종각", "latest_review": {"user": "맹코", "text": "종로에 가서 점심식사할 곳  찾다가 눈에 띄어 들어간곳으로 된장맛 때문인지 제 입맛에는 좀 짜네요", "date": "1일 전"}}, {"name": "더 피자 필", "category": "피자, 화덕피자", "address": "서울특별시 종로구 우정국로 4 1층 더피자필", "phone": "0507-1407-3283", "user_score": 3.6, "score": 70, "review_cnt": 10, "open_status": "영업 중", "distance": 121, "url": "https://www.diningcode.com/profile.php?rid=fNNVBafD6Snx", "keywords": ["식사모임", "캐주얼한", "예약필수", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260311063454112_photo_5f4835168fb3.webp", "area": "종각", "latest_review": {"user": "건식객", "text": "무난하고 얇은 도우의 피자. 1인 피자를 파는 것은 장점이다.", "date": "15일 전"}}, {"name": "슬로우캘리 종각역점", "category": "샐러드", "address": "서울특별시 종로구 우정국로 26 센트로폴리스 지하2층 라테일9호", "phone": "0507-1380-5818", "user_score": 4.8, "score": 77, "review_cnt": 9, "open_status": "영업 중", "distance": 131, "url": "https://www.diningcode.com/profile.php?rid=Dx227QSanGWm", "keywords": ["다이어트식단", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260107093843_photo1_a46701895070.webp", "area": "종각역", "latest_review": {"user": "직딩의먹코", "text": "간단하게 점심으로 먹기 좋아요\n종각역 센트로폴리스 지하에 있는 포케집 점심에 사람 많다", "date": "2개월 전"}}, {"name": "남대문막내횟집", "category": "횟집, 회정식", "address": "서울특별시 종로구 우정국로 4-1", "phone": "02-737-5115", "user_score": 3.8, "score": 73, "review_cnt": 12, "open_status": "영업 중", "distance": 134, "url": "https://www.diningcode.com/profile.php?rid=JRqWya65Ogg9", "keywords": ["술모임", "시끌벅적한", "예약필수", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250207185554_photo1_I9tPEYiqge3g.webp", "area": "종각", "latest_review": {"user": "ykszzkk", "text": "점심에 회도 먹을 수 있어서 가격은 합리적이지만 직원분인지 주문누락을 해놓으시고..\n점심에 점심특선이 가성비있고좋아요\n1:40에 방문했는데 대뜸 회정식 안된다고 하셔서;; 결국엔 먹었지만 좀 ㅠ 점심 정식 주문 가능한 정확한 시간 공지가 없고 브레이크도 고지가 없었어요\n1.3짜리 점심회정식이 가성비 좋으며, 저녁 숙성회도 맛있음", "date": "1년 전"}}, {"name": "쉐이크쉑 종각점", "category": "버거", "address": "서울특별시 종로구 종로 33 그랑서울특별시 1층", "phone": "0507-1417-7579", "user_score": 3.9, "score": 77, "review_cnt": 49, "open_status": "영업 중", "distance": 139, "url": "https://www.diningcode.com/profile.php?rid=SwobjEPftdEE", "keywords": ["혼밥", "무료주차", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260122102557094_photo_4ac3678d60a7.webp", "area": "광화문", "latest_review": {"user": "권용민", "text": "평일 점심에 종로점을 방문했는데 직장인들로 꽉 차있었다.\n점심시간은 직장인들이 많아서 피하는 것이 좋을듯함.\n점심시간때 테이블이 없을 수 있음!", "date": "17일 전"}}, {"name": "하얀고래 종각본점", "category": "젓갈, 쌈밥", "address": "서울특별시 종로구 종로 65 1층 109,110,111호", "phone": "0507-1481-0938", "user_score": 4.5, "score": 85, "review_cnt": 15, "open_status": "영업 중", "distance": 143, "url": "https://www.diningcode.com/profile.php?rid=IC6u21rXivBn", "keywords": ["가족외식", "깔끔한", "콜키지", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260131093236_photo1_69c7f5c7e9c7.webp", "area": "종각역", "latest_review": {"user": "코코미미언니", "text": "독특한 컨셉. 젓갈을 다양하게 구성한 정식이 인기. 젓갈임에도 많이 짜지않았다. (물을 많이 안 먹었다는) 알곤이찜은 그냥 쏘쏘. 위에 올려진 들깨가루가 맘에 안 들었음 ㅎ 수육도 그냥저냥  평타.  젓갈중 갈치속젓이 내입맛을 돋구었다.", "date": "2개월 전"}}, {"name": "우성닭갈비", "category": "닭갈비", "address": "서울특별시 종로구 종로8길 15-1 1층", "phone": "0507-1319-0271", "user_score": 3.8, "score": 74, "review_cnt": 11, "open_status": "영업 중", "distance": 146, "url": "https://www.diningcode.com/profile.php?rid=U5Se06dsDIA5", "keywords": ["식사모임", "배달", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250807045407_photo1_AnMVavwD8JFa.webp", "area": "종각", "latest_review": {"user": "노말러", "text": "점심에 미리 예약할수있어서 닭갈비 먹고싶을때 좋아요\n미리 예약이 된다는 점이 장점으로 팀 점심 전에 미리 예약하니 딱 먹기 전까지 조리되어 있어서 빠르게 식사할 수 있었음.\n점심에 닭갈비 땡길 때 추천.\n점심시간에 미리 전화로 예약하면 바로 드실 수 있어요~\n점심시간 볶음밥 무료입니다~", "date": "1년 전"}}, {"name": "에머이 종로1호점", "category": "쌀국수, 분짜", "address": "서울특별시 종로구 종로12길 6-20", "phone": "02-733-0588", "user_score": 4.2, "score": 73, "review_cnt": 42, "open_status": "영업 중", "distance": 149, "url": "https://www.diningcode.com/profile.php?rid=5gcdep8GNBB4", "keywords": ["데이트", "배달", "이국적/이색적", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241031112922060_photo_9ea905994d0e.webp", "area": "종각", "latest_review": {"user": "Noblesse Oblige", "text": "평일 점심시간에 가면 대기있음\n다음에 점심으로 또방문할까 하면 글쎄정도\n반쎄오를 점심에 안하는데 아쉽다\n자극적이진 않지만, 은근히 짬, 점심엔 거의 항상 웨이팅이 있음", "date": "4년 전"}}, {"name": "오봉집 종로점", "category": "낙지볶음, 보쌈", "address": "서울특별시 종로구 종로8길 20 1층", "phone": "0507-1393-0555", "user_score": 4.2, "score": 75, "review_cnt": 11, "open_status": "영업 중", "distance": 157, "url": "https://www.diningcode.com/profile.php?rid=mnIOvWwJgmZd", "keywords": ["술모임", "배달", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260312051940_photo1_744aaff45050.webp", "area": "종각", "latest_review": {"user": "양뚜비", "text": "점심에는 식사메뉴로 낙지볶음 파는데 가볍게 점심밥으로 먹기도 좋아요~\n점심시간에 방문했더니 세트메뉴가 있어 넘 알찼어요.", "date": "15일 전"}}, {"name": "금금 광화문점", "category": "퓨전한식", "address": "서울특별시 종로구 종로 33 상업시설동 L1층 109호", "phone": "0507-1492-7506", "user_score": 4.5, "score": 74, "review_cnt": 4, "open_status": "영업 중", "distance": 159, "url": "https://www.diningcode.com/profile.php?rid=wk620PjTJeld", "keywords": ["식사모임", "무료주차", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260228110133_photo1_ed9ca6d92457.webp", "area": "종각역", "latest_review": {"user": "맛난거원츄주", "text": "퓨전 한식 느낌의 식당이에요!\n음식이 맛있고 깔끔해서 다녀 온 뒤에도 생각나요~ 반주느낌으로 막걸리 한잔하기에 좋아요!", "date": "2개월 전"}}, {"name": "돈돈정", "category": "일본가정식, 스테이크정식", "address": "서울특별시 종로구 종로 33 지하 1층 111호", "phone": null, "user_score": 4.3, "score": 69, "review_cnt": 11, "open_status": "영업 중", "distance": 159, "url": "https://www.diningcode.com/profile.php?rid=IEzAk8P44DMq", "keywords": ["혼밥", "무료주차", "배달", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250622023749_photo1_1ae2d31d7a90.webp", "area": "종각역", "latest_review": {"user": "옴뇸뇸냠냠", "text": "광화문종각 인근,그랑서울 지하 직장인 점심먹기 좋은 일식맛집 돈돈정!\n메뉴도 빨리 나오고 접근성도 좋아 점심시간엔 분명 터져나갈 듯...\n그랑서울 구석에 자그마하게 위치해 있지만, 항상 점심시간에는 웨이팅이 필수인 곳이다!!!\n점심시간에 직장인들 많아 항상 기다리는집이에요, 일본 가정식인데 정갈하고 맛있어요.\n곁들여나오는 반차 계란말이와 명란도 맛잇고 회사원 점심으로 다양하고 색달라서 추천해요", "date": "9개월 전"}}, {"name": "더정 우롱티프로젝트 종로그랑서울점", "category": "밀크티, 우롱티", "address": "서울특별시 종로구 종로 33 지하1층 B106호", "phone": "0507-1402-0648", "user_score": 4.7, "score": 74, "review_cnt": 3, "open_status": "영업 중", "distance": 159, "url": "https://www.diningcode.com/profile.php?rid=wqNiCQFMuZt1", "keywords": ["혼카페", "캐주얼한", "테이크아웃", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260129073956_photo1_9f126b0df5fd.webp", "area": "종각역", "latest_review": {"user": "미순이의식단", "text": "점심 직후에 가면 사람 진짜 많아서 웨이팅 쫌 하셔야 하고, 끈을 달고 다니는 뻬이따이도 입고되어 있어서 구매 가능합니다!\n점심시간에는 웨이팅 긴 편.", "date": "1개월 전"}}, {"name": "백부장집 닭한마리", "category": "닭한마리, 닭도리탕", "address": "서울특별시 종로구 삼봉로 100-1", "phone": "02-732-2565", "user_score": 4.3, "score": 85, "review_cnt": 51, "open_status": "영업 중", "distance": 161, "url": "https://www.diningcode.com/profile.php?rid=XmDt7PQ9FoNI", "keywords": ["수요미식회", "식사모임", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260318020052153_photo_6545537f800b.webp", "area": "종각역", "latest_review": {"user": "요롱이", "text": "점심시간에는 사람이 매우 많습니다.\n직장인 점심시간에 인기 무진장 많아요", "date": "3개월 전"}}, {"name": "육전국밥 종각역점", "category": "소고기국밥, 육전국밥", "address": "서울특별시 종로구 종로 68 1층", "phone": "02-723-6782", "user_score": 4.7, "score": 72, "review_cnt": 4, "open_status": "영업 중", "distance": 167, "url": "https://www.diningcode.com/profile.php?rid=9pS1eBdTC6Of", "keywords": ["혼밥", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250925114702_photo1_f2d259a9a9d6.webp", "area": "종각역", "latest_review": {"user": "굴굴굴", "text": "점심은 요즘 체인점으로 많아지고 있는 육전국밥집 당첨.", "date": "27일 전"}}, {"name": "아비꼬 광화문점", "category": "카레", "address": "서울특별시 종로구 종로 34 알파빌딩 1층", "phone": "0507-1338-1398", "user_score": 4.1, "score": 75, "review_cnt": 14, "open_status": "영업 중", "distance": 180, "url": "https://www.diningcode.com/profile.php?rid=Q0h81mX3zL65", "keywords": ["혼밥", "캐주얼한", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260305070038_photo1_8e12fba7bd09.webp", "area": "종각", "latest_review": {"user": "대장오리", "text": "평일 점심에는 직장인들이 많이 방문하는 곳이라 11시 40~50분이 넘어가면 웨이팅이 있을 수 있어요\n직장인들 점심시간에 사람많고 혼밥하기 좋은 좌석도 있어요", "date": "21일 전"}}, {"name": "파작", "category": "샌드위치, 허니버터", "address": "서울특별시 종로구 청계천로 57 1층 파작", "phone": "0507-1373-7357", "user_score": 4.5, "score": 89, "review_cnt": 21, "open_status": "영업 중", "distance": 182, "url": "https://www.diningcode.com/profile.php?rid=QBGKibLikCW2", "keywords": ["생활의달인", "혼밥", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260317062139873_photo_5f4835168fb3.webp", "area": "종각역", "latest_review": {"user": "오늘의호기심품목", "text": "점심시간에는 웨이팅이 꽤 걸리니 참고해주세요.\n종각에서의 점심.", "date": "1개월 전"}}, {"name": "다담정식", "category": "백반, 가정식백반", "address": "서울특별시 종로구 청계천로 35 관정빌딩 지하1층", "phone": "02-739-6897", "user_score": 4.5, "score": 70, "review_cnt": 8, "open_status": "영업 중", "distance": 186, "url": "https://www.diningcode.com/profile.php?rid=n68JPqYIh6IU", "keywords": ["혼밥", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241128024030859_photo_fabc48758b07.webp", "area": "종각", "latest_review": {"user": "Ddnc", "text": "가정식 백반집 전보다 가격은 올랐지만 점심시간마다 줄서요\n점심시간에 간단히 먹기 좋은 백반집입니다.\n광화문종각 인근 직장인 점심 먹기 좋은 함바집 다담정식!\n집밥느낌. 서울페이 되서 그나마~ 점심시간 웨이팅 항상임", "date": "2년 전"}}, {"name": "안동국시 호면정", "category": "안동국시, 만두국", "address": "서울특별시 종로구 청계천로 35 관정빌딩 지하1층 안동국시 호면정", "phone": "02-722-2133", "user_score": 4.2, "score": 71, "review_cnt": 7, "open_status": "영업 중", "distance": 186, "url": "https://www.diningcode.com/profile.php?rid=DUjScZDw1ZIj", "keywords": ["식사모임", "무료주차", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250406025920239_photo_c10fa390751e.webp", "area": "종각", "latest_review": {"user": "미니iii스타", "text": "종각역 숨은 맛집 웬만한 방송 맛집보다 맛있고 담백하다 점심을 많이 먹는데 저녁이.더조음 조용하고 깔끔하며 서비스도 마니줌", "date": "4년 전"}}, {"name": "보승회관 종로점", "category": "국밥, 수육국밥", "address": "서울특별시 종로구 삼일대로 382 신영빌딩 1층", "phone": "0507-1460-0746", "user_score": 4.3, "score": 75, "review_cnt": 5, "open_status": "영업 중", "distance": 189, "url": "https://www.diningcode.com/profile.php?rid=ok61Fa7Zjcer", "keywords": ["해장", "캐주얼한", "포장", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260213045855_photo1_Nm0ULH5g8GOd.webp", "area": "종각역", "latest_review": {"user": "Noblesse Oblige", "text": "점심이면 해장하려는 직장인들이 줄서는 식당.\n거래처 과장님과 점심 먹으러 왓어요.", "date": "1개월 전"}}, {"name": "오한수 우육면가 서린점", "category": "우육탕면, 중식당", "address": "서울특별시 종로구 청계천로 35 관정빌딩 지하1층", "phone": "0507-1383-0483", "user_score": 4.7, "score": 68, "review_cnt": 7, "open_status": "영업 중", "distance": 190, "url": "https://www.diningcode.com/profile.php?rid=5mjrOIaGDtjb", "keywords": ["식사모임", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250416015455_photo1_a0bf52a91216.webp", "area": "종각", "latest_review": {"user": "솔직후기", "text": "군만두도.. 점심 웨이팅 좀 있지만 회전율 빨라서 기다릴 만해요.\n점심때마다 줄이 길긴한데 회전율이 빨라요", "date": "4년 전"}}, {"name": "종각밥상", "category": "육회, 육회비빔밥", "address": "서울특별시 종로구 종로11길 9-10 1층 ~ 2층", "phone": "070-4800-1070", "user_score": 4.4, "score": 71, "review_cnt": 6, "open_status": "영업 중", "distance": 197, "url": "https://www.diningcode.com/profile.php?rid=o9ryaFJHaw30", "keywords": ["혼밥", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250714104917056_photo_45328c555a92.webp", "area": "종각역", "latest_review": {"user": "델리", "text": "청와대 출신 쉐프님이 하신다는 식당 평일 점심에가면 조금 웨이팅할 수 있음", "date": "3년 전"}}, {"name": "힛더밥", "category": "카레, 부채살", "address": "서울특별시 종로구 삼봉로 95 1층 109호", "phone": "02-723-9301", "user_score": 4.4, "score": 73, "review_cnt": 5, "open_status": "영업 중", "distance": 214, "url": "https://www.diningcode.com/profile.php?rid=NBhoqoozuqMD", "keywords": ["혼밥", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260201120934829_photo_4fceeae73135.webp", "area": "종각역", "latest_review": {"user": "토게피", "text": "점심때 방문하는사람 많네요.", "date": "1개월 전"}}, {"name": "진순대", "category": "순대국", "address": "서울특별시 종로구 삼봉로 80-12", "phone": "02-733-4223", "user_score": 4.2, "score": 70, "review_cnt": 8, "open_status": "영업 중", "distance": 217, "url": "https://www.diningcode.com/profile.php?rid=oFnZM5LqEDTl", "keywords": ["식사모임", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260113055834_photo1_79e3fd400e77.webp", "area": "광화문", "latest_review": {"user": "져니25", "text": "점심먹기조오아요\n골목 구석에 있는데 점심때는 항상 줄서야 먹을 수 있어요\n점심시간에는 사람이 몰려서 조금 바쁘네요.\n순대라면이 유명하다고 해서 순대라면 시켜봄 다행히 별로 안기다리긴 했는데 점심시간에 진짜 장사가 잘되는지 늘 웨이팅이 있는 곳이라했다!!\n평일 점심시간 이면 11시부터 빨리 가는 게 좋음 ㅠ", "date": "2개월 전"}}, {"name": "선비꼬마김밥 종각직영점", "category": "김밥", "address": "서울특별시 종로구 종로 72-2", "phone": "02-725-1258", "user_score": 4, "score": 72, "review_cnt": 8, "open_status": "영업 중", "distance": 219, "url": "https://www.diningcode.com/profile.php?rid=63FM6gaBQnjl", "keywords": ["혼밥", "서민적인", "테이크아웃", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260303114527_photo1_c0bf746d5fb2.webp", "area": "종각역", "latest_review": {"user": "hange", "text": "간단히 먹기 좋은데 맛있어요. 한번씩 생각날 때마다 먹어요 친절하시고 접근성이 좋아요 :)", "date": "23일 전"}}, {"name": "아방베이커리 을지로 DGB점", "category": "크루아상, 스콘", "address": "서울특별시 중구 남대문로 125 1층", "phone": "02-3789-0747", "user_score": 3.8, "score": 74, "review_cnt": 8, "open_status": "영업 중", "distance": 224, "url": "https://www.diningcode.com/profile.php?rid=yG8EyUzVv6Wi", "keywords": ["차모임", "캐주얼한", "바테이블", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250903092951_photo1_a0bf52a91216.webp", "area": "종각", "latest_review": {"user": "노말러", "text": "점심먹고 걷다가 잠시 더위식히러 들어간 곳.", "date": "6개월 전"}}, {"name": "엘샌드위치 종각역점", "category": "샌드위치, 치아바타", "address": "서울특별시 종로구 종로5길 7 타워8 B1 엘샌드위치", "phone": "0507-1454-8220", "user_score": 4.7, "score": 73, "review_cnt": 6, "open_status": "영업 중", "distance": 226, "url": "https://www.diningcode.com/profile.php?rid=syouJQYRm4jB", "keywords": ["혼밥", "무료주차", "배달", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250814010711_photo1_1906c6952a18.webp", "area": "광화문", "latest_review": {"user": "hellosy", "text": "방부제, 유화제 등 넣지않고 만든 치아바타 빵으로 만든 샌드위치래요. 빵이 쫀득 폭신하고 맛있어요.", "date": "7개월 전"}}, {"name": "차이니스키친홍성원 본점", "category": "짬뽕, 차돌짬뽕", "address": "서울특별시 종로구 삼봉로 95 2층 차이니즈키친홍성원 본점", "phone": "02-736-4545", "user_score": 4, "score": 69, "review_cnt": 15, "open_status": "영업 중", "distance": 228, "url": "https://www.diningcode.com/profile.php?rid=NvzGbZDhrP5a", "keywords": ["식사모임", "무료주차", "푸짐한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250724014429677_photo_5e0bf9bca473.webp", "area": "종각역", "latest_review": {"user": "미니iii스타", "text": "점심시간에 기다리지 않으려면 11시 반 이전에 가야해요.\n평일 점심은 직장인들이 많아 웨이팅이 긴데 주말은 괜찮아요\n청담 홍성원 삼선간짜장 8천원 점심시간이라 복작복작한 느낌 양은 많은데 간이 셉니다", "date": "8개월 전"}}, {"name": "멘츠루 종로점", "category": "라멘, 시오라멘", "address": "서울특별시 종로구 삼봉로 95 1층 111호", "phone": "0507-1468-0749", "user_score": 4.3, "score": 74, "review_cnt": 8, "open_status": "영업 중", "distance": 229, "url": "https://www.diningcode.com/profile.php?rid=VF9CkX5jYMd6", "keywords": ["혼밥", "캐주얼한", "바테이블", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260219064807449_photo_5f4835168fb3.webp", "area": "종각역", "latest_review": {"user": "건식객", "text": "점심 방문으로 모츠라멘 골랐음\n오픈한 지 일주일 정도밖에 안 된 거 같은데 벌써 점심시간에는 근처 직장인들로 웨이팅이 상당하다.", "date": "1개월 전"}}, {"name": "프레퍼스 다이어트 푸드 종각역점", "category": "샐러드, 비프", "address": "서울 종로구 종로 74 영안빌딩 1층", "phone": "02-720-0622", "user_score": 4, "score": 74, "review_cnt": 5, "open_status": "영업 중", "distance": 229, "url": "https://www.diningcode.com/profile.php?rid=LvUnozDHaxVM", "keywords": ["혼밥", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260306114207_photo1_592629a97138.webp", "area": "종각역", "latest_review": {"user": "mila1234", "text": "제일 좋아하는 샐러드가게 프레퍼스! 종각역 넓고 음식도 빨리 나와서 좋았어요~", "date": "21일 전"}}, {"name": "지미존스 광화문점", "category": "샌드위치, 미국", "address": "서울특별시 종로구 종로5길 7 Tower8 1층", "phone": "0507-1381-2067", "user_score": 4.3, "score": 74, "review_cnt": 5, "open_status": "영업 중", "distance": 234, "url": "https://www.diningcode.com/profile.php?rid=338FtyPUglvD", "keywords": ["식사모임", "배달", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250910014430376_photo_9ea905994d0e.webp", "area": "광화문", "latest_review": {"user": "좋아요누르지마세요", "text": "루꼴라와 토마토 추가해서 먹으니 맛있었어요. 추천합니다~", "date": "7개월 전"}}, {"name": "강문순두부", "category": "순두부, 순두부찌개", "address": "서울특별시 종로구 종로5길 7 타워8 1층 102-1호", "phone": "0507-1365-7490", "user_score": 4.3, "score": 74, "review_cnt": 6, "open_status": "영업 중", "distance": 239, "url": "https://www.diningcode.com/profile.php?rid=XJ86wHbDlKM5", "keywords": ["식사모임", "배달", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251201080823_photo1_hkRAhLEW5gil.webp", "area": "광화문", "latest_review": {"user": "뀨뀽", "text": "점심시간부터 사람들이 가득 차는 인기 있는 곳으로, 정갈한 한식을 맛볼 수 있어 그 이유를 알 수 있습니다.", "date": "3개월 전"}}, {"name": "우육면관 광화문점", "category": "우육면, 만두", "address": "서울특별시 종로구 종로7길 29-14", "phone": "0507-1313-4830", "user_score": 4.7, "score": 91, "review_cnt": 58, "open_status": "영업 중", "distance": 245, "url": "https://www.diningcode.com/profile.php?rid=1kHkmNbMRcB4", "keywords": ["데이트", "깔끔한", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260301082645_photo1_ed931f9b415e.webp", "area": "종각역", "latest_review": {"user": "멸치보끔", "text": "점심시간에 갔는데 대기 손님이 많아서 20분 정도 기다렸어요.\n주말 점심시간 방문했는데 다행히 웨이팅 없었어요.\n점심시간 웨이팅 살포시 건너뛰고 2층 복층자리로 착석 후 대기시간 없이 바로 먹을 수 있었어요\n뜨끈한 국물과 포실한 고기와 어우러져 맛있는 점심시간이었답니다.", "date": "27일 전"}}, {"name": "멘노아지 종로점", "category": "돈코츠라멘, 라멘", "address": "서울특별시 종로구 종로5길 7 1층 101호", "phone": "0507-1414-2466", "user_score": 4.3, "score": 74, "review_cnt": 4, "open_status": "영업 중", "distance": 245, "url": "https://www.diningcode.com/profile.php?rid=Rrf7bk28i7pj", "keywords": ["혼밥", "깔끔한", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260315102708003_photo_f36ee5025da3.webp", "area": "광화문", "latest_review": {"user": "둥글레차", "text": "티라미수 같이 먹었지만\n에스프레소 두잔을 마시고 나니\n저녁시간이기도 하고 속도 허기져서\n라멘먹으러 들린 멘노아지 종로점\n\n곱창들어간 라멘이 있어서\n모츠 돈코츠라멘 주문하고\n차슈 추가했다\n\n금방 라멘 만들어주시는데\n곱창에 냄새하나도 안 나고 쫄깃하고\n돈코츠라멘도 느끼하지", "date": "11일 전"}}, {"name": "리사르커피 종로점", "category": "에스프레소, 에스프레소바", "address": "서울특별시 종로구 종로5길 7 1층", "phone": "0507-1437-5538", "user_score": 4.8, "score": 77, "review_cnt": 8, "open_status": "영업 중", "distance": 245, "url": "https://www.diningcode.com/profile.php?rid=PWPXBTaEUI3s", "keywords": ["혼카페", "캐주얼한", "테이크아웃", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251114091440453_photo_5e0bf9bca473.webp", "area": "광화문", "latest_review": {"user": "미니iii스타", "text": "다만 유명세와 회사 밀집 지역인 만큼 점심 시간을 피해 가면 좀 더 여유롭게 즐길 수 있습니다.\n점심시간에는 붐비긴 하지만 빨리 나와서 바호 마실수 있어요", "date": "4개월 전"}}, {"name": "갓덴스시 종로점", "category": "스시, 회전초밥", "address": "서울특별시 종로구 종로12길 14 1F", "phone": "0507-1422-1477", "user_score": 4.2, "score": 81, "review_cnt": 54, "open_status": "영업 중", "distance": 246, "url": "https://www.diningcode.com/profile.php?rid=n4lIxmJnl7C1", "keywords": ["데이트", "캐주얼한", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260220021154467_photo_be7361d95f00.webp", "area": "종각역", "latest_review": {"user": "데일리명륜", "text": "점심에는 직장인들도 많아서 방문하기 어렵지만 저녁에는 바로 들어올 수 있었어요!\n점심먹으러 자주 방문해요\n남편이 점심에 자주가는 갓덴스시입니다\n점심시간대에 방문해서 인기 10p세트를 먹었습니다\n또 회도 엄청 신선해서 점심 방문하는걸 추천해요", "date": "3개월 전"}}, {"name": "황산샤브샤브 종로점", "category": "훠궈, 꿔바로우", "address": "서울특별시 종로구 삼봉로 81 두산위브파빌리온지하102~105", "phone": "0507-1479-0051", "user_score": 3.6, "score": 74, "review_cnt": 13, "open_status": "영업 중", "distance": 249, "url": "https://www.diningcode.com/profile.php?rid=DYwkelqjWseh", "keywords": ["식사모임", "배달", "이국적/이색적", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260212041102_photo1_fb47b6fafdef.webp", "area": "광화문", "latest_review": {"user": "jnj102", "text": "평일 점심으로만 방문했어요.\n룸이 있어서 점심때 여러명이 가서 먹기 좋음!\n점심시간에가면 싸게먹을수있어 더좋을것같아요", "date": "2개월 전"}}, {"name": "부산돼지국밥", "category": "국밥, 돼지국밥", "address": "서울특별시 종로구 삼봉로 81 두산위브파빌리온 B109호", "phone": "02-725-1333", "user_score": 4.5, "score": 68, "review_cnt": 4, "open_status": "확인필요", "distance": 249, "url": "https://www.diningcode.com/profile.php?rid=r9VxgMkruerI", "keywords": ["혼밥", "지역주민이찾는", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20231223101655117_photo_c10fa390751e.webp", "area": "광화문", "latest_review": {"user": "qwerty", "text": "부산의 돼지국밥집이 그리울 때 한그릇 드링킹하기 좋은 곳. 카레국밥이라는 특이한 메뉴가 있는데 카레와 국밥이 묘하게 잘 어울리고 얼큰한 맛이 있음. 식사 타임 붐빌 땐 이 메뉴가 늦게 나오는 경우가 있어서 타이밍 잘 맞춰가야 함.", "date": "2년 전"}}, {"name": "류경회관 광화문점", "category": "평양냉면, 평양음식", "address": "서울 종로구 삼봉로 81 2층", "phone": "0507-1388-7565", "user_score": 3.7, "score": 72, "review_cnt": 10, "open_status": "영업 중", "distance": 258, "url": "https://www.diningcode.com/profile.php?rid=lbyv9yz3UdTP", "keywords": ["식사모임", "무료주차", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20240831120105319_photo_9ea905994d0e.webp", "area": "광화문", "latest_review": {"user": "거니나라", "text": "점심시간에 갈 때 마다 대세 메뉴는 돌솥비빔밥이더라고요\n광화문종갈 인근 직장인 점심먹기 좋은 그랑서울 지하1층 평양냉면 맛집!", "date": "1년 전"}}, {"name": "이태리부대찌개 종각역점", "category": "부대찌개, 부대전골", "address": "서울특별시 종로구 종로 77 통일빌딩 2층 204호", "phone": "02-720-2895", "user_score": 4, "score": 72, "review_cnt": 12, "open_status": "영업 중", "distance": 259, "url": "https://www.diningcode.com/profile.php?rid=lprnlunuRbPp", "keywords": ["식사모임", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251116065728537_photo_b0ef6725dad9.webp", "area": "종각역", "latest_review": {"user": "jiwon111", "text": "점심 시간에는 12시 전후에 자리가 빨리 차는 편임\n종각역 바로앞이고 2층인데도 직장이 많아 점심시간에 사람이 많습니다", "date": "4개월 전"}}, {"name": "관북", "category": "순대국, 수육", "address": "서울특별시 종로구 종로5길 32-5 1,2층", "phone": "0507-1402-8721", "user_score": 4.9, "score": 75, "review_cnt": 3, "open_status": "영업 중", "distance": 260, "url": "https://www.diningcode.com/profile.php?rid=OSpQx5NUh2W0", "keywords": ["혼밥", "점심맛집", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260223111445_photo1_b95eae3363e7.webp", "area": "광화문", "latest_review": {"user": "미니iii스타", "text": "점심에 미친듯이 줄을 서는 곳인데 그정도 가치를 하는집이다", "date": "1개월 전"}}, {"name": "더딤섬", "category": "딤섬, 샤오롱바오", "address": "서울특별시 종로구 종로12길 7 더딤섬", "phone": "0507-1485-5259", "user_score": 4.7, "score": 69, "review_cnt": 4, "open_status": "영업 중", "distance": 261, "url": "https://www.diningcode.com/profile.php?rid=A5todXDB4hhR", "keywords": ["혼밥", "깔끔한", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250502030649995_photo_69cf0e26fd34.webp", "area": "종각역", "latest_review": {"user": "qwerty", "text": "딤섬이라는 상호명답게 딤섬이 아주 맛있고 특히 샤오롱바오가 현지에서 먹는 느낌까지 남. 고수를 셀프로 먹을 수 있어 더 좋았음. 가격도 다른 중식에 비해 저렴한 편으로 직장인 식사로 적당함.", "date": "1년 전"}}, {"name": "삼숙이라면", "category": "라면, 주먹밥", "address": "서울특별시 종로구 종로11길 30", "phone": "02-720-9711", "user_score": 3.5, "score": 70, "review_cnt": 14, "open_status": "영업 중", "distance": 261, "url": "https://www.diningcode.com/profile.php?rid=9Ds5Lanha5wa", "keywords": ["백종원의3대천왕", "혼밥", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241029125933_photo1_c0bf746d5fb2.webp", "area": "인사동", "latest_review": {"user": "Noblesse Oblige", "text": "평일 한창 점심시간에 방문했습니다.\n점심시간인데 바깥쪽으로 웨이팅 줄이 있었고 좁은 골목이다보니 불편해보였습니다.", "date": "4년 전"}}, {"name": "카린지린가네스낵바 광화문점", "category": "이자카야, 술집", "address": "서울특별시 종로구 종로5길 32-3 1층", "phone": "0507-1490-8821", "user_score": 4.5, "score": 76, "review_cnt": 14, "open_status": "영업 중", "distance": 263, "url": "https://www.diningcode.com/profile.php?rid=ZYVEsRvTYM8p", "keywords": ["술모임", "이국적/이색적", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260211054943_photo1_Nm0ULH5g8GOd.webp", "area": "광화문", "latest_review": {"user": "Noblesse Oblige", "text": "점심시간에 카린지 점보가츠 간판을 보고 먹게됐습니다!!\n점심도 괜찮고 저녁 간단 메뉴도 귣\n광화문종각 직장인 점심 또는 퇴근후 한잔하기 좋은 카린지린가네스낵바!\n점심메뉴는 양이 좀 적음 ㅜ", "date": "1개월 전"}}, {"name": "서린낙지", "category": "낙지볶음, 소시지구이", "address": "서울특별시 종로구 종로 19 르메이에르종로타운1", "phone": "02-735-0670", "user_score": 4.2, "score": 80, "review_cnt": 48, "open_status": "영업 중", "distance": 267, "url": "https://www.diningcode.com/profile.php?rid=PbNJPukzWw7A", "keywords": ["백종원의3대천왕", "가족외식", "무료주차", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260207195409_photo1_7aeb80a38490.webp", "area": "광화문", "latest_review": {"user": "마멀레이드보이", "text": "점심시간에 빨리 가지 않으면 자리가 금세 만석이 된다.\n웨이팅있다고 하던데 점심에는 먹을만 하네요.\n저희는 토요일 점심시간에 방문했는데 웨이팅없이 즐길 수 있었습니다.", "date": "1개월 전"}}, {"name": "광화문 미진 본점", "category": "메밀국수, 냉메밀", "address": "서울특별시 종로구 종로 19 르메이에르종로타운1 1층", "phone": "02-730-6198", "user_score": 4.3, "score": 92, "review_cnt": 212, "open_status": "영업 중", "distance": 282, "url": "https://www.diningcode.com/profile.php?rid=QlMrlKl3A6ry", "keywords": ["수요미식회", "식사모임", "무료주차", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260322092357_photo1_d3f0d3891588.webp", "area": "광화문", "latest_review": {"user": "놀기대장에디", "text": "광화문 미진 유명해서 예전부터 가고싶었는데 점심시간 이후에 방문했는데도 웨이팅이 있었어요.\n평일 점심때 갔는데 대기 30번이 넘어갔지만 30분정도 기다렸어요.\n공휴일날 점심에 가서 두 시간 기다리고 먹었는데, 아쉽다는 생각 안들정도로 맛있었어요!!\n광화문종각 인근 직장인 점심먹기 좋은 미슐랭 맛집 광화문 미진!\n코로나 이전에는 관광버스가 매일 서있던 유명한 모밀집으로 점심시간에 많이 붐빔.", "date": "4일 전"}}, {"name": "쿠아타이푸드", "category": "쌀국수, 태국음식", "address": "서울특별시 종로구 종로 19 지하2층, B208-1", "phone": "0507-1361-9913", "user_score": 4.5, "score": 70, "review_cnt": 7, "open_status": "영업 중", "distance": 284, "url": "https://www.diningcode.com/profile.php?rid=43wXNFTQSHFb", "keywords": ["혼밥", "캐주얼한", "포장", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250622023549146_photo_98d7fe999ba5.webp", "area": "광화문", "latest_review": {"user": "사파링", "text": "태국분들이 운영하시는 매장같아요!!! 지하2층의 숨은곳에 있는 쌀국수 맛집입니당ㅎㅎ 쌀국수 육수가 갈색인게 엄청 진하고 맛있어요!!! 깔끔하고 소고기도 맛있었어요 다른 식사류도 먹어보고싶어용!!!", "date": "1년 전"}}, {"name": "등촌샤브칼국수 종로1가점", "category": "칼국수, 샤브샤브", "address": "서울특별시 종로구 종로 19 르메이에르 종로타운 지하1층", "phone": "02-738-4700", "user_score": 4.7, "score": 73, "review_cnt": 6, "open_status": "영업 중", "distance": 288, "url": "https://www.diningcode.com/profile.php?rid=VmM8J0MWcc7g", "keywords": ["혼밥", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250617034357691_photo_6545537f800b.webp", "area": "광화문", "latest_review": {"user": "리뷰왕", "text": "점심에 항상 사람많은데 일찍와서 자리잡고 맛잇게 먹엇습니다.\n광화문종각 인근 직장인 점심먹기 좋은 샤브+칼국수+볶음밥 맛집 등촌샤브칼국수!!", "date": "9개월 전"}}, {"name": "하오리", "category": "오리, 돼지고기", "address": "서울특별시 종로구 종로 19 르메이에르종로타운1 1층 112-2호", "phone": "0507-1320-9674", "user_score": 4.4, "score": 78, "review_cnt": 13, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=p9HQvdGy8OUk", "keywords": ["혼밥", "이국적/이색적", "예약가능", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260207092425698_photo_239738858ca6.webp", "area": "광화문", "latest_review": {"user": "소고리", "text": "좀 협소하긴 한데 점심에 기름지고 특이한 거 먹고싶으면 여기 가면 좋아요\n광화문종각 인근 직장인 점심저녁 식사하기 좋은 광동식 뽀차이판+오리요리 맛집 하오리 로스트!", "date": "2개월 전"}}, {"name": "1999codonbur", "category": "돈까스, 코돈부르", "address": "서울특별시 종로구 종로 19 르메이에르 종로타운 2층 215호", "phone": "0507-1386-3334", "user_score": 4.7, "score": 78, "review_cnt": 11, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=Lxqimc9eWiwQ", "keywords": ["혼밥", "깔끔한", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260116033705523_photo_5f4835168fb3.webp", "area": "광화문", "latest_review": {"user": "햬나", "text": "점심에 늦게가면 웨이팅하는집이예요.", "date": "5개월 전"}}, {"name": "청화 우육도삭면", "category": "우육면, 대만", "address": "서울특별시 종로구 종로 19", "phone": null, "user_score": 3.6, "score": 76, "review_cnt": 28, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=aFydHzYhUF5l", "keywords": ["혼밥", "이국적/이색적", "포장", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260121014227286_photo_5f4835168fb3.webp", "area": "광화문", "latest_review": {"user": "건식객", "text": "점심시간에는 항상 웨이팅이 있는데 맛은 있습니다\n종각역이랑 가깝고 점심먹으러 오기 나쁘지않은 위치와 가격\n대만식 우육면을 즐길 수 있는 곳으로 르메이에르에 위치하고 있어서 점심시간 직장인 웨이팅이 있음.\n광화문종각 직장인 점심먹기 좋은 우육면꿔바로우 맛집 청화우육도삭면\n이색적인 점심이었다", "date": "2개월 전"}}, {"name": "꿈떡꿈떡 종로본점", "category": "로제떡볶이", "address": "서울특별시 종로구 종로 19 지하1층 꿈떡꿈떡", "phone": "02-722-7223", "user_score": 4.4, "score": 72, "review_cnt": 10, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=GwAFyz98XNT9", "keywords": ["간식", "배달", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250314033711_photo1_0c4a3020ed31.webp", "area": "광화문", "latest_review": {"user": "Noblesse Oblige", "text": "점심 시간에는 웨이팅이 있는 인기 맛집인데 저녁에는 상대적으로 한산해서 저녁에 방문하는 것도 추천드려요!!\n점심시간에 가면 항상 줄을 서야 해서 못 가다가, 점심시간 좀 지나서 가봤더니 손님이 없어서 바로 주문할 수 있었다.\n지하에 있고 점심에 웨이팅 있어요", "date": "4년 전"}}, {"name": "완백부대찌개", "category": "부대찌개, 고사리", "address": "서울특별시 종로구 종로 19 ,2층 201-1호, 201-2호", "phone": "0507-1361-7953", "user_score": 3.8, "score": 71, "review_cnt": 10, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=ko8wbMokKi8g", "keywords": ["식사모임", "무료주차", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250814090314_photo1_79e3fd400e77.webp", "area": "광화문", "latest_review": {"user": "져니25", "text": "여기 가성비 좋고 양도 많고 맛있습니다.\n사장님도 친절하고 1인 1메뉴하면 무제한 라먄 밥도 좋았어요!\n다먹고 아이스크림도 주는 광화문 찐갓성비 식당으로 추천합니다", "date": "7개월 전"}}, {"name": "이치규 광화문점", "category": "규카츠, 채끝살", "address": "서울특별시 종로구 종로 19 르메이에르종로타운 지하1층 B123호", "phone": "070-7705-0930", "user_score": 4.6, "score": 73, "review_cnt": 4, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=rXxtbuuZz6SI", "keywords": ["혼밥", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260129014450200_photo_5f4835168fb3.webp", "area": "광화문", "latest_review": {"user": "건식객", "text": "맛있는 규카츠를 먹을 수 있는 집. 밥도 리필 가능하며 고기 양도 꽤 많다.", "date": "1개월 전"}}, {"name": "서당골 광화문점", "category": "한식, 불백", "address": "서울특별시 종로구 종로 19 지하1층 B106-2, B106-3호", "phone": "0507-1372-4189", "user_score": 5, "score": 71, "review_cnt": 3, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=EVxSSZ685QRr", "keywords": ["혼밥", "깔끔한", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250803092316274_photo_c10fa390751e.webp", "area": "광화문", "latest_review": {"user": "나봉이", "text": "여러명이서가먄 김치찜이랑 불백정식 나눠서 먹는게 좋아요. 반찬과 쌈 리필이 되고 푸짐하게 쌈밥먹을 수 있어서 좋아요!", "date": "7개월 전"}}, {"name": "츠키라멘", "category": "라멘, 츠케멘", "address": "서울특별시 종로구 종로 19 B1 108-1-3호", "phone": "0507-1407-0982", "user_score": 4.6, "score": 74, "review_cnt": 6, "open_status": "브레이크 타임", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=swpwlsFCsgKn", "keywords": ["혼밥", "서민적인", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251004043851_photo1_c10fa390751e.webp", "area": "광화문", "latest_review": {"user": "티라미수", "text": "라멘 전문점이에요. \n\n쇼유라멘 무난합니다. 쇼유라멘하면 생각할 수 있는 간장의 감칠맛 기반 라멘입니다. 면도 무난합니다. \n\n바 자리가 많아 혼밥하기 편해요.", "date": "5개월 전"}}, {"name": "초이다이닝 광화문점", "category": "일식당, 후토마끼", "address": "서울특별시 종로구 종로 19 2층 216호", "phone": "0507-1465-2066", "user_score": 4, "score": 75, "review_cnt": 11, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=c76ScnX2tEu3", "keywords": ["식사모임", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250917075213_photo1_fa4e4fa3bc05.webp", "area": "광화문", "latest_review": {"user": "포돌이", "text": "점심시간에 줄이 엄청 길게 서 있음.", "date": "3개월 전"}}, {"name": "공샤브", "category": "샤브샤브, 1인샤브", "address": "서울특별시 종로구 종로 19 지하1층 비114에이-1, 비114에이-2. 비 115에이-2. 비115에이-3호(종로1가, 르메이에르종로타운)", "phone": "0507-1437-1006", "user_score": 4.5, "score": 70, "review_cnt": 8, "open_status": "영업 중", "distance": 289, "url": "https://www.diningcode.com/profile.php?rid=0ZVn0kmUNwEZ", "keywords": ["혼밥", "캐주얼한", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241217081657910_photo_7d9bfdd2aeee.webp", "area": "광화문", "latest_review": {"user": "토이저러스", "text": "점심때 방문했어요\n직장인 점심 먹으러왔는데 세상 힙하네요.\n시끄러움만 극복한다면 넘나 만족한 점심이 될 수 있습니다.\n광화문종각 인귾직장인 점심먹기 좋은 힙한 1인샤브맛집 공샤브~", "date": "1년 전"}}, {"name": "엄용백 돼지국밥 종각점", "category": "돼지국밥", "address": "서울특별시 종로구 인사동3길 20", "phone": "0507-1342-8092", "user_score": 4, "score": 80, "review_cnt": 38, "open_status": "영업 중", "distance": 290, "url": "https://www.diningcode.com/profile.php?rid=ZMkN4xtl6vBD", "keywords": ["다코숨은맛집", "식사모임", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260201101849859_photo_39953508d1f5.webp", "area": "인사동", "latest_review": {"user": "kelly02", "text": "점심시간에는 한시간 동안 줄서야\n근처 업무지구가있어 점심한끼 해결하기 편한 곳이라 생각든다.\n깔끔하니 맛있다 감칠맛은 없는 듯 점심시간 웨이팅 길다\n점심시간 웨이팅이 심하여 시간 잘맞춰서 방문해야함.", "date": "2개월 전"}}, {"name": "후니도니", "category": "돈까스, 치즈돈까스", "address": "서울특별시 종로구 종로 19 르메이에르 B113-5호", "phone": "02-722-5402", "user_score": 4.5, "score": 81, "review_cnt": 37, "open_status": "영업 중", "distance": 292, "url": "https://www.diningcode.com/profile.php?rid=9Bpw5jqCIhE7", "keywords": ["다코숨은맛집", "혼밥", "무료주차", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251009113806451_photo_5e0bf9bca473.webp", "area": "광화문", "latest_review": {"user": "경의복수", "text": "점심시간에 엄청 줄서는 곳으로 가성비 끝판왕 돈까시 맛집입니다.\n광화문종각 직장인 점심먹기 좋은 돈가스 맛집 후니도니!\n점심 시간에 지나갈 때마다 웨이팅이 길어서 그렇게 맛있는 집인가 궁금해서 먹어봄.\n점심시간에 일찍 출발하여 겨우 먹게되었는데 기다리는인원에 비해 너무 별로였어요.\n점심 시간대에 방문했더니 대기가 많아서 좀 기다려야됐어요.", "date": "5개월 전"}}, {"name": "종로 수제비", "category": "수제비, 얼큰수제비", "address": "서울특별시 종로구 종로 19 르메이에르종로타운1", "phone": "02-2075-5586", "user_score": 4.3, "score": 73, "review_cnt": 12, "open_status": "영업 중", "distance": 292, "url": "https://www.diningcode.com/profile.php?rid=LwZFQiUFiZdv", "keywords": ["혼밥", "서민적인", "바테이블", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260311063607740_photo_5f4835168fb3.webp", "area": "광화문", "latest_review": {"user": "Noblesse Oblige", "text": "가볍고 빠르게 혼밥하기 좋은 곳이다!!!! 맛이 예상보다 좋고 저렴해서 가끔 간단히 먹고 싶으면 한번쯤 방문할만 하다~~~", "date": "1개월 전"}}, {"name": "마라공방", "category": "마라탕, 마라샹궈", "address": "서울특별시 종로구 종로 19", "phone": "02-2075-7366", "user_score": 4.4, "score": 74, "review_cnt": 8, "open_status": "영업 중", "distance": 293, "url": "https://www.diningcode.com/profile.php?rid=gYNE8H2Cf7gd", "keywords": ["혼밥", "무료주차", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251023055824732_photo_5e0bf9bca473.webp", "area": "광화문", "latest_review": {"user": "미니iii스타", "text": "점심에 줄도 길고, 깔끔한 맛과 인테리어, 직접 만즈는 소스 굳", "date": "5개월 전"}}, {"name": "카오리", "category": "이자카야, 돈까스", "address": "서울특별시 종로구 종로 19 2층 211-1호", "phone": "02-2075-5800", "user_score": 3.9, "score": 68, "review_cnt": 3, "open_status": "브레이크 타임", "distance": 293, "url": "https://www.diningcode.com/profile.php?rid=fR0qB7PF2Jeo", "keywords": ["혼밥", "서민적인", "포장", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250505104432418_photo_4fceeae73135.webp", "area": "광화문", "latest_review": {"user": "mDdd", "text": "무난하게 점심 먹기 좋은 곳으로 돈까스 바삭하게 느끼하지않게 잘 튀김!\n점심시간 혼밥하시는 분들도 많네요.\n점심 김치치즈돈까스가 시그니처.", "date": "1년 전"}}, {"name": "에도마에 텐동 하마다 종로점", "category": "텐동, 튀김", "address": "서울특별시 종로구 종로12길 23 포인트23빌딩 1층 에도마에텐동 하마다", "phone": "02-732-1129", "user_score": 3.9, "score": 77, "review_cnt": 17, "open_status": "영업 중", "distance": 294, "url": "https://www.diningcode.com/profile.php?rid=u64YEXyxnCn2", "keywords": ["혼밥", "배달", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260317065952_photo1_Nm0ULH5g8GOd.webp", "area": "종각역", "latest_review": {"user": "Noblesse Oblige", "text": "평일 점심 웨이팅하는 맛집입니다.\n다만 점심 시간에는 사람이 많은 편인데, 사람이 너무 많을 때는 줄을 서야할 수 있고 이때쯤에는 만들기에 급해서 그런지 튀김이 살짝 눅눅하거나 고추튀김 안에서 맵기\n점심시간에는 항상 기다리는 사람이 많습니다\n종각에서 맛있는 텐동을 먹을 수 있는 곳 점심에는 사람 많은것 같음", "date": "9일 전"}}, {"name": "청진동 장터순대국", "category": "순대국", "address": "서울특별시 종로구 종로5길 40", "phone": "02-735-8055", "user_score": 4.3, "score": 73, "review_cnt": 9, "open_status": "영업 중", "distance": 300, "url": "https://www.diningcode.com/profile.php?rid=JeBufX8j6QO0", "keywords": ["식사모임", "서민적인", "바테이블", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250314100133_photo1_323901db91a4.webp", "area": "광화문", "latest_review": {"user": "노말러", "text": "매일 24시간 영업 점심시간 일찍 안 가면 웨이팅이 있어요\n점심시간은 웨이팅이 좀 긴편이지만 순환속도가 빠르며 맛은 보장함.", "date": "3년 전"}}, {"name": "교동전선생 종로구청점", "category": "찌개, 막걸리", "address": "서울특별시 종로구 삼봉로 62 1층, 2층 교동전선생", "phone": "0507-1314-9909", "user_score": 4, "score": 69, "review_cnt": 7, "open_status": "영업 중", "distance": 305, "url": "https://www.diningcode.com/profile.php?rid=lIas9uTTEkIL", "keywords": ["술모임", "배달", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250905024103787_photo_d55a30590f3c.webp", "area": "광화문", "latest_review": {"user": "숑숑꾸기", "text": "점심정식을 주문했는데 전, 찌개, 계란찜등 가성비 좋은 가격에 푸짐하게 제공됐다!!!\n저녁에는 가끔 2차로 전을 먹으로 오긴하는데 점심에는 방문 안할거 같다~~~", "date": "4년 전"}}, {"name": "은행골 종로구청점", "category": "스시, 연어", "address": "서울특별시 종로구 종로5길 44", "phone": "02-736-4988", "user_score": 3.9, "score": 73, "review_cnt": 9, "open_status": "영업 중", "distance": 309, "url": "https://www.diningcode.com/profile.php?rid=h0E6z3Yke7Hb", "keywords": ["식사모임", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260206112128_photo1_d91612ad5865.webp", "area": "광화문", "latest_review": {"user": "오잉", "text": "배달로먹어도 맛있는 은행골입니다\n하지만 배달은 좀 느렸어요", "date": "1개월 전"}}, {"name": "모루카츠", "category": "카츠, 돈까스", "address": "서울특별시 종로구 종로 19 르메이에르 지하1층 117-1(홀), 116-1(배달)", "phone": "070-4027-4963", "user_score": 4.8, "score": 76, "review_cnt": 8, "open_status": "영업 중", "distance": 311, "url": "https://www.diningcode.com/profile.php?rid=JK0Yy21jrO4l", "keywords": ["혼밥", "배달", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260226073816492_photo_5f4835168fb3.webp", "area": "광화문", "latest_review": {"user": "건식객", "text": "점심 시간에 가면 웨이팅이 길어서 이름 적어놓고 대기해야 함.\n종각광화문 직장인 점심저녁 먹기 좋은 깔끔한 카츠맛집 모루카츠!", "date": "28일 전"}}, {"name": "민소한우 광화문점", "category": "한우, 소고기", "address": "서울특별시 종로구 종로 22 인주빌딩 지하1층 민소한우", "phone": "0507-1336-5400", "user_score": 4.1, "score": 71, "review_cnt": 7, "open_status": "영업 중", "distance": 311, "url": "https://www.diningcode.com/profile.php?rid=S2QEuo9PF8U1", "keywords": ["식사모임", "격식있는", "개별룸", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241210105309_photo1_0b2ea42c4f94.webp", "area": "광화문", "latest_review": {"user": "쏭쏭", "text": "점심에 가격도 괜찮아서 요즘 저녁에 회식 잘안하는데 점심에 회식하기에 좋은 곳이예요.\n점심메뉴 갈비탕에 갈비 양 많고 국물도 진해요~\n반찬도 깔끔하고 점심메뉴 다양하니 좋아요", "date": "5년 전"}}, {"name": "장인닭갈비 종로점", "category": "닭갈비, 치즈닭갈비", "address": "서울특별시 종로구 청계천로 73 1층", "phone": "02-735-4468", "user_score": 4.5, "score": 79, "review_cnt": 11, "open_status": "영업 중", "distance": 315, "url": "https://www.diningcode.com/profile.php?rid=jqL0hBUSy5qi", "keywords": ["식사모임", "캐주얼한", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251127045916_photo1_555f3b5efb30.webp", "area": "종각역", "latest_review": {"user": "용빡이", "text": "거래처분과 점심미팅왓습니다.\n점심시간에 엄청 빨리나와야되요", "date": "4개월 전"}}, {"name": "풍황", "category": "쌀국수, 베트남쌀국수", "address": "서울특별시 종로구 종로 19 르메이에르종로타운", "phone": "02-732-5550", "user_score": 4.1, "score": 72, "review_cnt": 9, "open_status": "영업 중", "distance": 316, "url": "https://www.diningcode.com/profile.php?rid=olhn4xPEQcdJ", "keywords": ["혼밥", "무료주차", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250816115608_photo1_15633c710ebc.webp", "area": "광화문", "latest_review": {"user": "예띠", "text": "점심으로 먹기 딱 좋아요!!\n점심 든든한끼로 추천추천!\n라임 미고랭 월남쌈 점심 사람많다 친절 사이다 서비스", "date": "7개월 전"}}, {"name": "해봉정육 무교점", "category": "정육식당, 고기집", "address": "서울특별시 중구 청계천로 24 케이스퀘어시티 B1", "phone": "0507-1383-7171", "user_score": 3.9, "score": 74, "review_cnt": 13, "open_status": "영업 중", "distance": 329, "url": "https://www.diningcode.com/profile.php?rid=IUuouYC5OHBE", "keywords": ["회식", "무료주차", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250808090019_photo1_Nm0ULH5g8GOd.webp", "area": "광화문", "latest_review": {"user": "sanbotaste", "text": "점심 메뉴는 무난한 맛이에요.", "date": "1개월 전"}}, {"name": "온도", "category": "덮밥", "address": "서울특별시 종로구 삼일대로15길 21 1층 ondo", "phone": "010-9136-8908", "user_score": 3.6, "score": 70, "review_cnt": 4, "open_status": "영업 중", "distance": 331, "url": "https://www.diningcode.com/profile.php?rid=7lQ1mNkvXGdF", "keywords": ["혼밥", "캐주얼한", "포장", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251218093046_photo1_66f359400a65.webp", "area": "종각역", "latest_review": {"user": "미순이의식단", "text": "종각역 인근, 젊음의거리와 청계천 사이 골목에 위치한 한식 베이스의 덮밥 전문점인데, 전반적으로 육류 중심의 메뉴 구성이 특징이고 특히 점심시간대에는 인근 직장인들\n결론은 가성비도 괜찮은 점심시간 직장인 식사 스팟입니다.", "date": "4개월 전"}}, {"name": "된장예술과술", "category": "집밥, 된장정식", "address": "서울특별시 종로구 삼일대로15길 20", "phone": "02-733-4516", "user_score": 4, "score": 72, "review_cnt": 8, "open_status": "영업 중", "distance": 333, "url": "https://www.diningcode.com/profile.php?rid=HAbodMSg2ugU", "keywords": ["회식", "깔끔한", "예약가능", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250124084024172_photo_ae8e9f9ecdc3.webp", "area": "종각", "latest_review": {"user": "qwerty", "text": "종각에서 건강한 한식 느낌으로 점심을 해결할 수 있는 곳\n점심에 식사하러 방문하는 곳인데 앉자마자 된장정식 주문 받으시고 음식이 거의 바로 나와요\n직장인 점심 거리에서 오래도록 명맥을 유지하는 전통맛집.\n점심방문 웨이팅 있으나 회전율 빠름 점심특선이 있으면 좋을련만 된장정식만 먹자니 허점하고...\n점심이나 저녁이나 먹을만함", "date": "1년 전"}}, {"name": "황소고집", "category": "고추장불고기, 백반", "address": "서울특별시 종로구 청계천로 75-2", "phone": "02-722-5747", "user_score": 3.9, "score": 78, "review_cnt": 45, "open_status": "영업 중", "distance": 335, "url": "https://www.diningcode.com/profile.php?rid=tCDeQPBMI0cg", "keywords": ["다코숨은맛집", "식사모임", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251230024456_photo1_3c9af5c7c3cc.webp", "area": "종각역", "latest_review": {"user": "홍당무s", "text": "점심에도 저녁에도 다 좋음!\n점심에는 고추장불고기 백반으로 밥이 나오지만 저녁에는 밥을 따로 주문해야 합니다.\n점심 때는 공기밥 포함 6,000원이라 하니 사람들이 북적거리지 않을까 싶다.\n평일 점심에는 워낙 사람이 붐벼서 안가본지 매우 오래되었는데 주말 저녁이라 그런지 자리가 있었습니다.\n점심시간 고추장불고기 백반이 6천원으로 비교적 저렴하고 맛있어요.", "date": "2개월 전"}}, {"name": "쇠고집", "category": "등심, 토시살", "address": "서울특별시 종로구 인사동3길 5-2", "phone": null, "user_score": 4.2, "score": 73, "review_cnt": 13, "open_status": "영업 중", "distance": 336, "url": "https://www.diningcode.com/profile.php?rid=EaWAM3MgwwW8", "keywords": ["식사모임", "캐주얼한", "예약필수", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260108120350_photo1_04d4c10c00be.webp", "area": "인사동", "latest_review": {"user": "응또링", "text": "종각종로 인근 직장인 점심먹기 좋은 인사동 맛집 쇠고집!\n점심메뉴 대페삼겹 김치찌개 맛있어요!", "date": "4개월 전"}}, {"name": "고량주관", "category": "중식, 마파두부", "address": "서울특별시 종로구 청계천로 77-3 고량주관(한옥건물)", "phone": "0507-1487-9008", "user_score": 4.8, "score": 88, "review_cnt": 14, "open_status": "영업 중", "distance": 338, "url": "https://www.diningcode.com/profile.php?rid=eYSKeI4cJcOr", "keywords": ["술모임", "고급스러운", "콜키지", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251024092949_photo1_a46701895070.webp", "area": "종각역", "latest_review": {"user": "미순이의식단", "text": "점심 웨이팅 테이블링으로 인원수 및 메뉴까지 주문 가능 정말 자극적임\n:) 점심에 빠르게 방문하니 바로 들어갈 수 있었고, 깔끔하고 정갈해요\n맛집으로 유명한데, 점심 메뉴로 운영하는 마파두부 정식은 그 자체로도 유명세가 상당합니다.\n점심시간에는 웨이팅이 거의 필수이므로 미리 대기해야 하고, 대신 오후 1시부터는 예약이 가능했습니다.\n* 추천 메뉴: 점심 마파두부 정식, 탕수육", "date": "7개월 전"}}, {"name": "샤오바오 우육면", "category": "우육면, 수타면", "address": "서울특별시 종로구 삼일대로17길 15", "phone": "0507-1431-7858", "user_score": 3.9, "score": 81, "review_cnt": 50, "open_status": "영업 중", "distance": 342, "url": "https://www.diningcode.com/profile.php?rid=covUuWPQU3i1", "keywords": ["혼밥", "캐주얼한", "칸막이", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260208015455_photo1_69bc35ed1eb7.webp", "area": "종각", "latest_review": {"user": "먹죽귀", "text": "이 근방에서 꽤 인기가 있어 특히 점심엔 웨이팅 필수 입니다.\n점심에 간단하게 먹기 좋아요 !\n점심시간에 손님 많아요\n점심에 무조건 웨이팅해야 먹을수있는 우육면집 다양한 면 굵기를 내 입맛대로 고를수 있다 국물은 얼큰하고 취향껏 고수를 추가해 먹을수있는집 메인메뉴도 많아서 저녁시간", "date": "1개월 전"}}, {"name": "진중 우육면관 본점", "category": "우육면, 만두", "address": "서울특별시 종로구 청계천로 75-2", "phone": "0507-1376-2257", "user_score": 4.5, "score": 93, "review_cnt": 102, "open_status": "영업 중", "distance": 347, "url": "https://www.diningcode.com/profile.php?rid=hVe913EGlSv8", "keywords": ["다코숨은맛집", "혼밥", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260104022442_photo1_673c569024bb.webp", "area": "청계천", "latest_review": {"user": "강호덩", "text": "후기 : 기존에 먹어봤던 우육면들 보다는 덜 자극적, 뭔가 더 건강하고 깊은 맛 기본 국물에 라장 추가해서 먹으면 맵싹하게 먹기 가능 웨이팅 : 주말 점심에는 널널\n종각에서의 점심.\n테이블 전환이 빠른푠 점심으로는 추천\n평일 점심시간에도 줄이 길었는데 혼자가니 금방 빠졌어요\n평일 점심시간 오픈 맞춰서 가지 않으면 무조건 대기해야 하는 곳.", "date": "2개월 전"}}, {"name": "마라공방 종로3가역점", "category": "마라탕, 마라샹궈", "address": "서울특별시 종로구 종로 86 2층", "phone": "0507-1492-8210", "user_score": 4.1, "score": 73, "review_cnt": 5, "open_status": "영업 중", "distance": 349, "url": "https://www.diningcode.com/profile.php?rid=vyJlsBN0UhOh", "keywords": ["혼밥", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241122153922_photo1_a2e1b1990f36.webp", "area": "종각역", "latest_review": {"user": "마니모니", "text": "재료가 다양하고, 사장님이 친절하십니다\n마라공방에선 처음 먹어보는데 아주 만족스러운 한 끼였어요! 앞으로도 자주 갈 것 같아요\n주문팁: 고기를 무게로 계산해서 많이 담을 수 있어요.", "date": "2개월 전"}}, {"name": "해탄 종각역점", "category": "오징어볶음, 오징어요리", "address": "서울 종로구 종로14길 9 2층", "phone": "02-6080-5728", "user_score": 4.5, "score": 72, "review_cnt": 5, "open_status": "영업 중", "distance": 356, "url": "https://www.diningcode.com/profile.php?rid=hy1KduTDO8x7", "keywords": ["식사모임", "서민적인", "셀프바", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251103053940_photo1_d55a42e67aed.webp", "area": "종각", "latest_review": {"user": "지담", "text": "점심에 먹기 좋고, 반찬도 무한리필이에요!\n점심에 무한리필인게 메리트있는듯.", "date": "4개월 전"}}, {"name": "청진옥", "category": "해장국, 선지", "address": "서울특별시 종로구 종로3길 32", "phone": "02-735-1690", "user_score": 4.1, "score": 83, "review_cnt": 89, "open_status": "영업 중", "distance": 357, "url": "https://www.diningcode.com/profile.php?rid=JoJejHek5u8P", "keywords": ["수요미식회", "혼밥", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260117044727059_photo_821f3c8c2d9a.webp", "area": "광화문", "latest_review": {"user": "in슐랭", "text": "점심에 직장인들이 많이 옵니다.\n오래된 만큼 할아버지 할머니 손님들도 많은 편 언제가도 손님이 늘 많은데 특히 점심에 타이밍 못맞추면 웨이팅 필수에요.\n종각 근처 점심 해장 or 저녁 회식하기 좋은 해장국 맛집 청진옥!\n종로 금은방 보기전에 점심으로 국밥이 땡겨서 찾아보고 방문하였고, 주차는 옆 큰상가건물에 주차를하고 도장을 받으면 되는 시스템 이었습니다.", "date": "2개월 전"}}, {"name": "장혁민의부대찌개", "category": "부대찌개, 부대전골", "address": "서울특별시 종로구 종로14길 26", "phone": "02-734-2222", "user_score": 4.2, "score": 74, "review_cnt": 8, "open_status": "영업 중", "distance": 365, "url": "https://www.diningcode.com/profile.php?rid=rjCIfmoPpxaH", "keywords": ["혼밥", "서민적인", "셀프코너", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251227090932731_photo_8a63108eab40.webp", "area": "종각", "latest_review": {"user": "허냉", "text": "주차는 불가함, 평일 점심은 직장인들로 가득함, 보통의 부대찌개보다 깔끔한 맛으로 오히려 존슨탕에 가까움, 금일은 전골을 주문했지만 평소엔 찌개를 주문했음, 전골이", "date": "2개월 전"}}, {"name": "또보겠지떡볶이집 몽글몽글청계점", "category": "떡볶이, 즉석떡볶이", "address": "서울특별시 종로구 삼일대로19길 6 2층", "phone": "0507-1402-4103", "user_score": 4.3, "score": 82, "review_cnt": 29, "open_status": "영업 중", "distance": 374, "url": "https://www.diningcode.com/profile.php?rid=8oD8B2BAA24K", "keywords": ["데이트", "서민적인", "예약불가", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251102033611_photo1_a0bf52a91216.webp", "area": "종각", "latest_review": {"user": "노말러", "text": "점심에는 웨이팅이 좀 있을 수 있는데 오후 5시 30분 전에 가니 웨이팅 없이 들어갔어요\n점심시간에는 거의 무조건 웨이팅이 있는데, 빨리 빠지는 편이지만 워낙 손님이 많은 편이라 핫타임에는 웨이팅 각오가 필요하다.\n점심시간에 가면 11:20분부터 만석이라 미리 나와서 방문하셔야되요\n회사 바로 근처에도 지점이 있길래 점심 시간에 두 번 방문함 인테리어는 역시 디즈니 감성이고 메뉴랑 가격도 똑같다.\n점심 시간에 가니 웨이팅이 많아져서 테이블링으로 대기등록해야 했다. (몇 달 전에는 사람이 별로 없었는데 그사이에 소문이 난 듯)", "date": "4개월 전"}}, {"name": "오로지라멘 종각본점", "category": "라멘, 바질라멘", "address": "서울특별시 종로구 삼일대로15길 8 1층", "phone": "02-722-7123", "user_score": 4.1, "score": 73, "review_cnt": 13, "open_status": "영업 중", "distance": 377, "url": "https://www.diningcode.com/profile.php?rid=mcybHqoE28ma", "keywords": ["혼밥", "배달", "캐주얼한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20241127195406_photo1_8153f6b070ea.webp", "area": "종각", "latest_review": {"user": "미순이의식단", "text": "점심에는 웨이팅 살짝 있을 때도 있으나 금방 빠집니다.\n일본 돈코츠라멘 좋아하시면 점심시간에 빨리나와서 방문해보세요\n기름진 라멘과 곁들이는 점심시간의 맥주!\n평일 오후 12시에 갔고 점심시간이라 대기 5팀 정도 기다리고 들어간것 같아요\n점심시간이 되면 정말 인기가 많은 곳입니다", "date": "3개월 전"}}, {"name": "북창동순두부 종로관철점", "category": "순두부", "address": "서울특별시 종로구 삼일대로 391 3층", "phone": "0507-1420-8967", "user_score": 3.5, "score": 67, "review_cnt": 1, "open_status": "영업 중", "distance": 391, "url": "https://www.diningcode.com/profile.php?rid=uWBiQiNXx4ZN", "keywords": ["혼밥", "배달", "점심맛집", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251002193007_photo1_a2e1b1990f36.webp", "area": "종각역", "latest_review": {"user": "picky picky", "text": "점심시간이면 주변 짓장인들로 북적이고 어수선하지만, 빨리 나오고 맛도 괜찮다", "date": "5개월 전"}}, {"name": "솥내음 종로인사동점", "category": "솥밥, 문어", "address": "서울특별시 종로구 인사동길 14 지상2층", "phone": "0507-1477-8215", "user_score": 4.3, "score": 78, "review_cnt": 9, "open_status": "영업 중", "distance": 396, "url": "https://www.diningcode.com/profile.php?rid=SPpVOZXcMOm9", "keywords": ["가족외식", "캐주얼한", "콜키지무료", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260120105347_photo1_f5b81536ef64.webp", "area": "인사동", "latest_review": {"user": "조서방구쟁이", "text": "밑반찬과 후식으로 나오는 계피차도 소박하고 절제된 느낌. 여럿이 시끌벅적하게 즐기는 식당은 아니고 담백하게 둘셋이 가서 맛있게 먹고 나올 수 있는 점심 전문 식당", "date": "2개월 전"}}, {"name": "일산칼국수", "category": "닭칼국수, 닭한마리", "address": "서울특별시 종로구 삼일대로15길 6", "phone": "02-733-3131", "user_score": 4.1, "score": 68, "review_cnt": 7, "open_status": "영업 중", "distance": 396, "url": "https://www.diningcode.com/profile.php?rid=KbvM5TsMtGo7", "keywords": ["혼밥", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251218085144_photo1_AnMVavwD8JFa.webp", "area": "종각", "latest_review": {"user": "라이언", "text": "가격이 조금 비싼편~ 점심시간에 칼국수 먹는 직장인으로 만석이다", "date": "3개월 전"}}, {"name": "종로돈부리", "category": "돈부리, 사케동", "address": "서울특별시 종로구 삼일대로 385 1층,2층", "phone": "02-722-2384", "user_score": 4, "score": 78, "review_cnt": 42, "open_status": "영업 중", "distance": 407, "url": "https://www.diningcode.com/profile.php?rid=w4JdG7PbIL21", "keywords": ["혼밥", "깔끔한", "바자리", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20260214013413_photo1_69bc35ed1eb7.webp", "area": "종각", "latest_review": {"user": "먹죽귀", "text": "사케동 맛집 찾다가 방문한집인데 평일 점심시간에도 웨이팅이 좀 있어요.\n종로에 있는 돈부리 맛집 평일 점심에는 줄을 서야 할수도 근데 대기하는 사람들을 실내 계단에서 줄을 서게 해서..\n점심시간에는 항상 웨이팅이 많음.\n점심시간에 40분 기다렸는데 기다린 보람 있을만큼 돈까스 밥 반찬 모두 깔끔하고 간도 적당하고 맛있었어요\n점심시간 웨이팅 있으나 금방 들어갔고, 맛도 깔끔하고 좋았다", "date": "1개월 전"}}, {"name": "선어도", "category": "회백반, 횟집", "address": "서울특별시 종로구 청계천로 85 지하 1층 선어도 청계천삼일빌딩", "phone": "02-6325-3309", "user_score": 4.2, "score": 73, "review_cnt": 5, "open_status": "영업 중", "distance": 407, "url": "https://www.diningcode.com/profile.php?rid=P8geCDUucVHB", "keywords": ["식사모임", "배달", "깔끔한", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20251223092229_photo1_66f359400a65.webp", "area": "종각", "latest_review": {"user": "식충희", "text": "점심에 회를 먹다니 좋았어요!\n세미접대느낌으로 점심에 깔끔하게 먹기 좋은 곳 음식 맛도 나쁘지않아요", "date": "3개월 전"}}, {"name": "등촌샤브칼국수 종로점", "category": "샤브샤브, 볶음밥", "address": "서울특별시 종로구 삼일대로15길 3", "phone": "02-734-9490", "user_score": 4.4, "score": 68, "review_cnt": 10, "open_status": "영업 중", "distance": 409, "url": "https://www.diningcode.com/profile.php?rid=xKe3UPq3Zp3k", "keywords": ["식사모임", "서민적인", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250616113209_photo1_6d2dda5a4d6a.webp", "area": "종각", "latest_review": {"user": "mimi", "text": "점심 때 자주 찾는 곳이에요.", "date": "6년 전"}}, {"name": "서울익스프레스88", "category": "중식, 짜장면", "address": "서울특별시 종로구 삼일대로15길 1 1층, 2층", "phone": "0507-1334-1331", "user_score": 3.7, "score": 71, "review_cnt": 11, "open_status": "영업 중", "distance": 419, "url": "https://www.diningcode.com/profile.php?rid=SRU4k1e1iqeH", "keywords": ["혼밥", "배달", "가성비좋은", "점심"], "image": "https://d12zq4w4guyljn.cloudfront.net/300_300_20250602071120449_photo_7495c6358268.webp", "area": "종각", "latest_review": {"user": "봄봄", "text": "회사 근처에 인테리어가 눈에 띄어서 가봤는데 중국음식을 빠르고 간편하게 먹을 수 있어서 좋았어요. 판다익스프레스나 서브웨이랑 비슷한 시스템인데 맛도 있고 종류가 다양해서 자주 가고 있습니다. 혼밥하기도 좋네요ㅎㅎ", "date": "3년 전"}}];
+let filter = 'all';
+
+function setFilter(f) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.filter === f));
+}
+
+function getPool() {
+  return filter === 'open'
+    ? ALL.filter(r => r.open_status.includes('영업 중'))
+    : ALL;
+}
+
+function pick() {
+  const pool = getPool();
+  if (!pool.length) { alert('해당 조건의 식당이 없습니다.'); return; }
+  const finalPick = pool[Math.floor(Math.random() * pool.length)];
+  const btn = document.querySelector('.pick-btn');
+  btn.disabled = true;
+  btn.textContent = '🎰 뽑는 중...';
+
+  const el = document.getElementById('card');
+  el.className = 'card roulette-card';
+  el.innerHTML = `
+    <div class="roulette-wrap">
+      <div class="roulette-label">🎰 오늘의 점심은...</div>
+      <div class="roulette-name" id="rouletteName">?</div>
+      <div class="roulette-cat" id="rouletteCat"></div>
+    </div>
+  `;
+
+  let count = 0;
+  const totalSteps = 28;
+
+  function spin() {
+    const nameEl = document.getElementById('rouletteName');
+    const catEl  = document.getElementById('rouletteCat');
+    if (!nameEl) return;
+
+    if (count >= totalSteps) {
+      nameEl.textContent = finalPick.name;
+      catEl.textContent  = finalPick.category || '';
+      nameEl.classList.remove('roulette-flash');
+      void nameEl.offsetWidth;
+      nameEl.classList.add('roulette-land');
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '🎲 오늘의 점심 뽑기!';
+        renderCard(finalPick);
+      }, 700);
+      return;
+    }
+
+    const r = pool[Math.floor(Math.random() * pool.length)];
+    nameEl.textContent = r.name;
+    catEl.textContent  = r.category || '';
+    nameEl.classList.remove('roulette-flash');
+    void nameEl.offsetWidth;
+    nameEl.classList.add('roulette-flash');
+
+    count++;
+    const progress = count / totalSteps;
+    const delay = 60 + progress * progress * 380;
+    setTimeout(spin, delay);
+  }
+
+  spin();
+}
+
+function renderCard(r) {
+  const isOpen  = r.open_status.includes('영업 중');
+  const score   = r.user_score ? '⭐ ' + r.user_score : '-';
+  const dcScore = r.score ? r.score + '점' : '-';
+  const dist    = r.distance != null ? r.distance + 'm' : '-';
+  const reviews = r.review_cnt ? r.review_cnt + '개' : '-';
+  const kwHtml  = r.keywords.length
+    ? r.keywords.map(k => `<span class="keyword">${k}</span>`).join('') : '';
+  const rev     = r.latest_review;
+  const revHtml = rev && rev.text
+    ? `<div class="address" style="margin-top:10px">💬 <strong>${rev.user}</strong> (${rev.date}) — ${rev.text.slice(0, 80).replace(/\n/g, ' ')}…</div>`
+    : '';
+  const imgHtml = r.image
+    ? `<img src="${r.image}" alt="${r.name}" style="width:100%;border-radius:12px;margin-bottom:14px;object-fit:cover;max-height:180px;">`
+    : '';
+
+  const el = document.getElementById('card');
+  el.className = 'card';
+  void el.offsetWidth; // reflow for animation restart
+  el.className = 'card flip';
+  el.innerHTML = `
+    ${imgHtml}
+    <div class="card-header">
+      <div class="restaurant-name">${r.name}</div>
+      <div class="open-badge ${isOpen ? 'open' : 'closed'}">${isOpen ? '영업 중' : '영업 종료'}</div>
+    </div>
+    ${r.category ? `<div class="category-tag">${r.category}${r.area ? ' · ' + r.area : ''}</div>` : ''}
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">평점</span>
+        <span class="info-value stars">${score}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">다이닝코드</span>
+        <span class="info-value">${dcScore}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">리뷰</span>
+        <span class="info-value">${reviews}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">종각역에서</span>
+        <span class="info-value">${dist}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">전화</span>
+        <span class="info-value" style="font-size:13px">${r.phone || '-'}</span>
+      </div>
+    </div>
+    <div class="divider"></div>
+    ${r.address ? `<div class="address">📍 ${r.address}</div>` : ''}
+    ${revHtml}
+    ${kwHtml ? `<div class="keywords" style="margin-top:10px">${kwHtml}</div>` : ''}
+    <a class="diningcode-link" href="${r.url}" target="_blank">다이닝코드에서 자세히 보기 →</a>
+  `;
+}
+
+function renderTopList() {
+  const top = [...ALL]
+    .filter(r => r.user_score)
+    .sort((a, b) => b.user_score - a.user_score)
+    .slice(0, 10);
+
+  document.getElementById('topList').innerHTML = top.map((r, i) => {
+    const isOpen = r.open_status.includes('영업 중');
+    const dist   = r.distance != null ? r.distance + 'm' : '-';
+    return `
+      <div class="list-item" onclick='renderCard(${JSON.stringify(r)})'>
+        <div class="list-rank ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+        <div class="dot ${isOpen ? 'open' : 'closed'}"></div>
+        <div class="list-info">
+          <div class="list-name">${r.name}</div>
+          <div class="list-cat">${r.category}</div>
+        </div>
+        <div class="list-right">
+          <div class="list-score">⭐ ${r.user_score}</div>
+          <div class="list-dist">${dist}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+renderTopList();
+
+document.getElementById('updated').textContent = '데이터 기준: 2026년 3월 25일 21시 28분';
+</script>
+</body>
+</html>

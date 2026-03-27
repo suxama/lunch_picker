@@ -1,0 +1,27 @@
+name: Update lunch data
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'   # 평일 오전 9시 KST (UTC 00:00)
+  workflow_dispatch:          # 수동 실행 가능
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 식당 데이터 갱신
+        run: python lunch_picker.py --update-html
+
+      - name: 변경사항 커밋 & 푸시
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "chore: update restaurant data $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+          git push
